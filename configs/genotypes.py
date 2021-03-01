@@ -1,0 +1,4 @@
+from collections import namedtuple
+
+Genotype = namedtuple('Genotype', 'alpha_cell concat_node')
+ZINC_Net = [Genotype(alpha_cell=[('ZoH', 1, 0), ('H', 2, 0), ('ZoH', 3, 0), ('LsumH', 4, 1), ('LsumH', 5, 2), ('LsumH', 6, 3), ('ZoH', 7, 5), ('ZoH', 8, 5), ('QH', 9, 8)], concat_node=None), Genotype(alpha_cell=[('QH', 1, 0), ('H', 2, 0), ('ZoH', 3, 0), ('LsumH', 4, 1), ('LsumH', 5, 2), ('LsumH', 6, 3), ('ZoH', 7, 6), ('QH', 8, 6), ('QH', 9, 8)], concat_node=None), Genotype(alpha_cell=[('QH', 1, 0), ('QH', 2, 1), ('H', 3, 2), ('LmaxH', 4, 1), ('LmaxH', 5, 2), ('LmaxH', 6, 3), ('QH', 7, 6), ('QH', 8, 7), ('QH', 9, 7)], concat_node=None), Genotype(alpha_cell=[('QH', 1, 0), ('H', 2, 1), ('QH', 3, 2), ('LmaxH', 4, 1), ('LmaxH', 5, 2), ('LsumH', 6, 3), ('QH', 7, 5), ('QH', 8, 5), ('H', 9, 7)], concat_node=None)]
