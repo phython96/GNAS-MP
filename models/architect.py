@@ -7,7 +7,6 @@ from torch.autograd import Variable
 def _concat(xs):
     return torch.cat([x.view(-1) for x in xs])
 
-
 class Architect(object):
 
     def __init__(self, model, args):
@@ -18,8 +17,8 @@ class Architect(object):
                                           lr=args.arch_learning_rate, betas=(0.5, 0.999),
                                           weight_decay=args.arch_weight_decay)
 
-    def _compute_unrolled_model(self, batch_graphs, batch_x, batch_snorm_n, batch_labels, eta, network_optimizer):
-        loss = self.model._loss(batch_graphs, batch_x, batch_snorm_n, batch_labels)
+    def _compute_unrolled_model(self, batch_graphs, batch_x, batch_labels, eta, network_optimizer):
+        loss = self.model._loss(batch_graphs, batch_x, batch_labels)
         theta = _concat(self.model.parameters()).data
         try:
             moment = _concat(network_optimizer.state[v]['momentum_buffer'] for v in self.model.parameters()).mul_(self.network_momentum)
@@ -29,37 +28,37 @@ class Architect(object):
         unrolled_model = self._construct_model_from_theta(theta.sub(eta, moment + dtheta))
         return unrolled_model
     '''
-    architect.step(batch_graphs, batch_x, batch_labels, batch_snorm_n,
-                   batch_graphs_search, batch_x_search, batch_labels_search, batch_snorm_n_search,
+    architect.step(batch_graphs, batch_x, batch_labels,
+                   batch_graphs_search, batch_x_search, batch_labels_search,
                    lr, optimizer, unrolled=args.unrolled)
     '''
-    def step(self, batch_graphs, batch_x, batch_snorm_n, batch_labels,
-                   batch_graphs_search, batch_x_search, batch_snorm_n_search, batch_labels_search,
+    def step(self, batch_graphs, batch_x, batch_labels,
+                   batch_graphs_search, batch_x_search, batch_labels_search,
                    eta, optimizer, unrolled):
         self.optimizer.zero_grad()
         if unrolled:
-            self._backward_step_unrolled(batch_graphs, batch_x, batch_snorm_n, batch_labels, batch_graphs_search, batch_x_search, batch_snorm_n_search, batch_labels_search, eta, optimizer)
+            self._backward_step_unrolled(batch_graphs, batch_x, batch_labels, batch_graphs_search, batch_x_search, batch_labels_search, eta, optimizer)
         else:
-            #self._backward_step(batch_graphs, batch_x, batch_snorm_n, batch_labels)
-            self._backward_step(batch_graphs_search, batch_x_search, batch_snorm_n_search, batch_labels_search)
+            self._backward_step(batch_graphs, batch_x, batch_labels)
+            #self._backward_step(batch_graphs_search, batch_x_search, batch_labels_search)
         self.optimizer.step()
 
-    def _backward_step(self, batch_graphs, batch_x, batch_snorm_n, batch_labels):
-        loss = self.model._loss(batch_graphs, batch_x, batch_snorm_n, batch_labels)
+    def _backward_step(self, batch_graphs, batch_x, batch_labels):
+        loss = self.model._loss(batch_graphs, batch_x, batch_labels)
         self.loss += loss
         loss.backward()
 
-    def _backward_step_unrolled(self, batch_graphs, batch_x, batch_snorm_n, batch_labels,
-                   batch_graphs_search, batch_x_search, batch_snorm_n_search, batch_labels_search,
+    def _backward_step_unrolled(self, batch_graphs, batch_x, batch_labels,
+                   batch_graphs_search, batch_x_search, batch_labels_search,
                    eta, network_optimizer):
-        unrolled_model = self._compute_unrolled_model(batch_graphs, batch_x, batch_snorm_n, batch_labels, eta, network_optimizer)
-        unrolled_loss = unrolled_model._loss(batch_graphs_search, batch_x_search, batch_snorm_n_search, batch_labels_search)
+        unrolled_model = self._compute_unrolled_model(batch_graphs, batch_x, batch_labels, eta, network_optimizer)
+        unrolled_loss = unrolled_model._loss(batch_graphs_search, batch_x_search, batch_labels_search)
         self.loss += unrolled_loss
 
         unrolled_loss.backward()
         dalpha = [v.grad for v in unrolled_model.arch_parameters()]
         vector = [v.grad.data for v in unrolled_model.parameters()]
-        implicit_grads = self._hessian_vector_product(vector, batch_graphs, batch_x, batch_snorm_n, batch_labels)
+        implicit_grads = self._hessian_vector_product(vector, batch_graphs, batch_x, batch_labels)
 
         for g, ig in zip(dalpha, implicit_grads):
             g.data.sub_(eta, ig.data)
@@ -85,16 +84,16 @@ class Architect(object):
         model_new.load_state_dict(model_dict)
         return model_new.cuda()
 
-    def _hessian_vector_product(self, vector, batch_graphs, batch_x, batch_snorm_n, batch_labels, r=1e-2):
+    def _hessian_vector_product(self, vector, batch_graphs, batch_x, batch_labels, r=1e-2):
         R = r / _concat(vector).norm()
         for p, v in zip(self.model.parameters(), vector):
             p.data.add_(R, v)
-        loss = self.model._loss(batch_graphs, batch_x, batch_snorm_n, batch_labels)
+        loss = self.model._loss(batch_graphs, batch_x, batch_labels)
         grads_p = torch.autograd.grad(loss, self.model.arch_parameters())
 
         for p, v in zip(self.model.parameters(), vector):
             p.data.sub_(2 * R, v)
-        loss = self.model._loss(batch_graphs, batch_x, batch_snorm_n, batch_labels)
+        loss = self.model._loss(batch_graphs, batch_x, batch_labels)
         grads_n = torch.autograd.grad(loss, self.model.arch_parameters())
 
         for p, v in zip(self.model.parameters(), vector):

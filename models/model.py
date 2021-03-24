@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from operations import MIXED_OPS
+from models.operations import MIXED_OPS
 
 class MLPReadout(nn.Module):
 
@@ -34,10 +34,10 @@ class OpModule(nn.Module):
 		self.batchnorm_h = nn.BatchNorm1d(feature_dim)
 		self.activate = nn.ReLU()
 
-	def forward(self, g, h, h_in, snorm_n) :
-		h = self.op(g, h, h_in, snorm_n)
+	def forward(self, g, h, h_in) :
+		h = self.op(g, h, h_in)
 		h = self.linear(h)
-		#h = self.batchnorm_h(h) 
+		h = self.batchnorm_h(h) 
 		h = self.activate(h)
 		#h = F.dropout(h, self._dropout, training=self.training)
 		return h

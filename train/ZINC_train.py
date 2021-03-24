@@ -105,7 +105,7 @@ def start(args):
         valid_mae, valid_obj = infer(valid_queue, model, criterion, stage = 'validating')
 
         # testing
-        test_mae,  test_obj = infer(test_queue, model, criterion, stage = ' testing  ')
+        test_mae,  test_obj = infer(test_queue, model, criterion, stage = 'testing   ')
         desc = '[train] mae: {:.3f}, loss: {:.3f}\t[validate] mae:{:.3f}, loss: {:.3f}\t[test] mae: {:.3f}, loss: {:.3f}'.format(
             train_mae, train_obj, valid_mae, valid_obj, test_mae, test_obj
         )
@@ -124,7 +124,7 @@ def train(train_queue, model, criterion, optimizer):
     epoch_loss = 0
     epoch_train_mae = 0
     nb_data = 0
-    desc = '=> training'
+    desc = '=> training  '
     with tqdm(train_queue, desc=desc) as t:
         for step, (batch_graphs, batch_targets) in enumerate(t):
             start = time.time()
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     parser.add_argument('--workers', type=int, default=0, help='workers')
     parser.add_argument('--layers', type=int, default=2, help='total number of layers')
     parser.add_argument('--feature_dim', type=int, default=70, help='number of features')
-    parser.add_argument('--nodes', type=int, default=4, help='total number of nodes')
+    parser.add_argument('--nodes', type=int, default=3, help='total number of nodes')
     parser.add_argument('--epochs', type=int, default=150, help='num of training epochs')
     parser.add_argument('--save', type=str, default='EXP', help='experiment name')
     parser.add_argument('--report_freq', type=float, default=200, help='report frequency')

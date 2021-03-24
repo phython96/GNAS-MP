@@ -247,7 +247,7 @@ if __name__ == '__main__':
     parser.add_argument('--workers', type=int, default=0, help='workers')
     parser.add_argument('--layers', type=int, default=4, help='total number of layers')
     parser.add_argument('--feature_dim', type=int, default=70, help='number of features')
-    parser.add_argument('--nodes', type=int, default=4, help='total number of nodes')
+    parser.add_argument('--nodes', type=int, default=3, help='total number of nodes')
     parser.add_argument('--epochs', type=int, default=100, help='num of training epochs')
     parser.add_argument('--save', type=str, default='EXP', help='experiment name')
     parser.add_argument('--report_freq', type=float, default=200, help='report frequency')

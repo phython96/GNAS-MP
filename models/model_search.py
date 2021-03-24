@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from genotypes import Genotype
-from operations import OPS, FIRST_OPS, MIDDLE_OPS, LAST_OPS
-from cell import Cell
+from configs.genotypes import Genotype
+from models.operations import FIRST_OPS, MIDDLE_OPS, LAST_OPS
+from models.cell import Cell
 
 class MLPReadout(nn.Module):
 
@@ -153,10 +153,10 @@ class Network(nn.Module):
             end = start + n
             W = W_first[start : end]
             j = sorted(range(n), key = lambda x : -max(W[x][k] for k in range(len(FIRST_OPS))
-                                                       if k != FIRST_OPS.index('none')))[0]
+                                                       if k != FIRST_OPS.index('f_zero')))[0]
             k_best = None
             for k in range(len(FIRST_OPS)):
-                if k == FIRST_OPS.index('none'): continue
+                if k == FIRST_OPS.index('f_zero'): continue
                 if k_best is None or W[j][k] > W[j][k_best]:
                     k_best = k
             gene.append((FIRST_OPS[k_best], n, j))
@@ -166,7 +166,7 @@ class Network(nn.Module):
         middle_nodes = list(range(1, 1 + nb_first_nodes))
         for n in range(0, nb_first_nodes):
             k = torch.argmax(W_middle[n]).cpu().item()
-            if k != MIDDLE_OPS.index('H'):
+            if k != MIDDLE_OPS.index('f_identity'):
                 new_node = max(middle_nodes) + 1
                 pre_node = middle_nodes[n]
                 gene.append((MIDDLE_OPS[k], new_node, pre_node))
@@ -180,10 +180,10 @@ class Network(nn.Module):
             end = start + nb_first_nodes + n
             W = W_last[start : end]
             j = sorted(range(nb_first_nodes + n), key=lambda x: -max(W[x][k] for k in range(len(FIRST_OPS))
-                                                    if k != FIRST_OPS.index('none')))[0]
+                                                    if k != FIRST_OPS.index('f_zero')))[0]
             k_best = None
             for k in range(len(FIRST_OPS)):
-                if k == FIRST_OPS.index('none'): continue
+                if k == FIRST_OPS.index('f_zero'): continue
                 if k_best is None or W[j][k] > W[j][k_best]:
                     k_best = k
             pre_node_id = middle_nodes[j] if j < nb_first_nodes else j - nb_first_nodes + max(middle_nodes) + 1
