@@ -23,10 +23,10 @@ class DotDict(dict):
         self.update(kwds)
         self.__dict__ = self
 
-class MyCriterion(nn.Module)
+class MyCriterion(nn.Module):
     def __init__(self, num_classes):
         super(MyCriterion, self).__init__()
-        self.n_classes = num_class
+        self.n_classes = num_classes
     def forward(self, pred, label):
         V = label.size(0)
         label_count = torch.bincount(label)
@@ -34,11 +34,11 @@ class MyCriterion(nn.Module)
         cluster_sizes = torch.zeros(self.n_classes).long().cuda()
         cluster_sizes[torch.unique(label)] = label_count
         weight = (V - cluster_sizes).float() / V
-        weight *= (cluster_sizes > 0).float
+        weight *= (cluster_sizes > 0).float()
         # weighted cross-entropy for unbalanced classes
         criterion = nn.CrossEntropyLoss(weight=weight)
         loss = criterion(pred, label)
-        return l
+        return loss
 
 def start(args):
     if not torch.cuda.is_available():
@@ -135,7 +135,7 @@ def start(args):
 
 def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr, epoch, viz = None):
     model.train()
-    top1 = utils.AvgrageMeter()
+    top1 = AvgrageMeter()
     epoch_loss = 0
     macro_acc = 0
     desc = '=> searching'
@@ -156,7 +156,7 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr, 
 
             architect.step(batch_graphs, batch_x, batch_targets,
                            batch_graphs_search, batch_x_search, batch_targets_search,
-                           lr, optimizer, unrolled=args.unrolled
+                           lr, optimizer, unrolled=args.unrolled)
 
             alpha += model._arch_parameters[1].softmax(dim=1)
 
@@ -205,7 +205,7 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr, 
 
 def infer(valid_queue, model, criterion, stage):
     model.eval()
-    top1 = utils.AvgrageMeter()
+    top1 = AvgrageMeter()
     epoch_loss = 0
     macro_acc = 0
 
@@ -219,9 +219,7 @@ def infer(valid_queue, model, criterion, stage):
 
             batch_scores = model(batch_graphs, batch_x)
             loss = criterion(batch_scores, batch_targets)
-
             prec1  = accuracy(batch_scores, batch_targets, topk=(1, ))[0]
-
             top1.update(prec1.item(), n)
             epoch_loss += loss.detach().item()
             macro_acc += accuracy_SBM(batch_scores, batch_targets)

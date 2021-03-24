@@ -23,35 +23,58 @@ class DotDict(dict):
         self.update(kwds)
         self.__dict__ = self
 
+class MyCriterion(nn.Module):
+    def __init__(self, num_classes):
+        super(MyCriterion, self).__init__()
+        self.n_classes = num_classes
+    def forward(self, pred, label):
+        V = label.size(0)
+        label_count = torch.bincount(label)
+        label_count = label_count[label_count.nonzero()].squeeze()
+        cluster_sizes = torch.zeros(self.n_classes).long().cuda()
+        cluster_sizes[torch.unique(label)] = label_count
+        weight = (V - cluster_sizes).float() / V
+        weight *= (cluster_sizes > 0).float()
+        # weighted cross-entropy for unbalanced classes
+        criterion = nn.CrossEntropyLoss(weight=weight)
+        loss = criterion(pred, label)
+        return loss
+
 def start(args):
     if not torch.cuda.is_available():
         logging.info('no gpu device available')
         sys.exit(1)
+
+    # seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
-    cudnn.enabled = True
     cudnn.benchmark = True
+    cudnn.enabled = True
     logging.info("args = %s", args)
 
-    criterion = nn.CrossEntropyLoss()
-    criterion = criterion.cuda()
-
     dataset = LoadData(args.data_name)
-    in_dim = dataset.train[0][0].ndata['feat'][0].size(0)
-    num_classes = len(np.unique(np.array(dataset.train[:][1])))
+    if args.data_name == 'SBM_PATTERN':
+        in_dim = 3
+        num_classes = 2
+    else:
+        in_dim = 7
+        num_classes = 6
     print(f"=> input dimension: {in_dim}, number classes: {num_classes}")
+
+    criterion = MyCriterion(num_classes)
+    criterion = criterion.cuda()
     
-    if args.data_name == 'MNIST':
-        genotype = MNIST_Net
-    elif args.data_name == 'CIFAR10':
-        genotype = CIFAR10_Net
+    if args.data_name == 'SBM_PATTERN':
+        genotype = PATTERN_Net
+    elif args.data_name == 'SBM_CLUSTER':
+        genotype = CLUSTER_Net
     else:
         print("Unknown dataset.")
         exit()
 
     print('=> loading from genotype: \n', genotype)
-    model = Network(genotype, args.layers, in_dim, args.feature_dim, num_classes, criterion, args.data_type, args.readout, args.dropout)
+    model = Network(genotype, args.layers, in_dim, args.feature_dim, num_classes, criterion, args.data_type, args.readout)
     model = model.cuda()
     logging.info("param size = %fMB", count_parameters_in_MB(model))
 
@@ -62,7 +85,7 @@ def start(args):
         pin_memory = True,
         num_workers=args.workers,
         collate_fn = dataset.collate,
-        shuffle = True) #新增shuffle
+        shuffle = True)
 
     valid_queue = torch.utils.data.DataLoader(
         val_data, batch_size = args.batch_size,
@@ -78,16 +101,19 @@ def start(args):
         collate_fn=dataset.collate,
         shuffle = False)
     
+    
+    
     if args.optimizer == 'SGD':
-        optimizer = torch.optim.SGD(model.parameters(), args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+        optimizer = torch.optim.SGD(model.parameters(), args.learning_rate, momentum=args.momentum,
+                                weight_decay=args.weight_decay)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR( optimizer, float(args.epochs), eta_min=args.learning_rate_min)
     elif args.optimizer == 'ADAM':
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=3e-6)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min',
-                                                               factor=0.5,
-                                                               patience=5,
-                                                               verbose=True)
-        
+                                                     factor=0.5,
+                                                     patience=5,
+                                                     verbose=True)
+    
     for epoch in range(args.epochs):
         logging.info('[EPOCH]\t%d', epoch)
         if args.optimizer == 'SGD':
@@ -95,16 +121,11 @@ def start(args):
             lr = scheduler.get_lr()[0]
             logging.info('[LR]\t%f', lr)
 
-        # training
-        train_acc, train_obj = train(train_queue, model, criterion, optimizer)
+        macro_acc, micro_acc, train_obj = train(train_queue, model, criterion, optimizer)
         # validation
-        valid_acc, valid_obj = infer(valid_queue, model, criterion, stage = 'validating')
+        macro_acc, micro_acc, valid_obj = infer(valid_queue, model, criterion, stage = 'validating')
         # testing
-        test_acc, test_obj = infer(test_queue, model, criterion, stage = 'testing   ')
-        desc = '[train] acc: {:.3f}, loss: {:.3f}\t[validate] acc:{:.3f}, loss: {:.3f}\t[test] acc: {:.3f}, loss: {:.3f}'.format(
-            train_acc, train_obj, valid_acc, valid_obj, test_acc, test_obj
-        )
-        logging.info(desc)
+        macro_acc, micro_acc, test_obj = infer(test_queue, model, criterion, stage = ' testing   ')
 
         if args.optimizer == 'ADAM':
             scheduler.step(valid_obj)
@@ -114,39 +135,11 @@ def start(args):
 
 def train(train_queue, model, criterion, optimizer):
     model.train()
+    top1 = AvgrageMeter()
     epoch_loss = 0
-    epoch_train_acc = 0
-    nb_data = 0
+    macro_acc = 0
     desc = '=> training  '
     with tqdm(train_queue, desc=desc) as t:
-        for step, (batch_graphs, batch_targets) in enumerate(t):
-            start = time.time()
-            batch_x = batch_graphs.ndata['feat'].cuda()  # num x feat
-            #batch_e = batch_graphs.edata['feat'].cuda()
-            batch_targets = batch_targets.cuda()
-
-            optimizer.zero_grad()
-            batch_scores = model(batch_graphs, batch_x)
-            loss = criterion(batch_scores, batch_targets)
-            loss.backward()
-            optimizer.step()
-            epoch_loss += loss.detach().item()
-            epoch_train_acc += accuracy_MNIST_CIFAR(batch_scores, batch_targets)
-            nb_data += batch_targets.size(0)
-            t.set_postfix(time=time.time()-start, loss=epoch_loss/(step+1),
-                          MICRO_ACC=epoch_train_acc / nb_data)
-    epoch_loss /= (step + 1)
-    epoch_train_acc /= nb_data
-
-    return epoch_train_acc * 100, epoch_loss
-
-def infer(valid_queue, model, criterion, stage):
-    epoch_loss = 0
-    epoch_valid_acc = 0
-    nb_data = 0
-    model.eval()
-    desc = f'=> {stage}'
-    with tqdm(valid_queue, desc=desc) as t:
         for step, (batch_graphs, batch_targets) in enumerate(t):
             start = time.time()
             n = batch_targets.size(0)
@@ -154,45 +147,78 @@ def infer(valid_queue, model, criterion, stage):
             #batch_e = batch_graphs.edata['feat'].cuda()
             batch_targets = batch_targets.cuda()
 
+            optimizer.zero_grad()
             batch_scores = model(batch_graphs, batch_x)
             loss = criterion(batch_scores, batch_targets)
 
+            loss.backward()
+            optimizer.step()
             epoch_loss += loss.detach().item()
-            epoch_valid_acc += accuracy_MNIST_CIFAR(batch_scores, batch_targets)
-            nb_data += batch_targets.size(0)
+            macro_acc += accuracy_SBM(batch_scores, batch_targets)
+            prec1 = accuracy(batch_scores, batch_targets, topk=(1, ))[0]
+            top1.update(prec1.item(), n)
             t.set_postfix(time=time.time()-start, loss=epoch_loss/(step+1),
-                          MICRO_ACC=epoch_valid_acc / nb_data)
+                          MACRO_ACC=macro_acc/(step+1), MICRO_ACC=top1.avg)
+
     epoch_loss /= (step + 1)
-    epoch_valid_acc /= nb_data
-    return epoch_valid_acc * 100, epoch_loss
+    macro_acc /= (step + 1)
+    micro_acc = top1.avg
+    return macro_acc, micro_acc, epoch_loss
 
+def infer(valid_queue, model, criterion, stage):
+    model.eval()
+    top1 = AvgrageMeter()
+    epoch_loss = 0
+    macro_acc = 0
+    desc = f'=> {stage}'
+    with tqdm(valid_queue, desc=desc) as t:
+        for step, (batch_graphs, batch_targets) in enumerate(t):
+            start = time.time()
+            n = batch_targets.size(0)
+            batch_x = batch_graphs.ndata['feat'].cuda()  # num x feat
+            batch_targets = batch_targets.cuda()
 
+            batch_scores = model(batch_graphs, batch_x)
+            loss = criterion(batch_scores, batch_targets)
+
+            prec1  = accuracy(batch_scores, batch_targets, topk=(1, ))[0]
+            top1.update(prec1.item(), n)
+            epoch_loss += loss.detach().item()
+            macro_acc += accuracy_SBM(batch_scores, batch_targets)
+            t.set_postfix(time=time.time()-start, loss=epoch_loss/(step+1),
+                          MACRO_ACC=macro_acc/(step+1), MICRO_ACC=top1.avg)
+
+    epoch_loss /= (step + 1)
+    macro_acc /= (step + 1)
+    micro_acc = top1.avg
+    
+    return macro_acc, micro_acc, epoch_loss
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("GNAS")
     parser.add_argument('--seed', type=int, default=41, help='random seed')
     # data
-    parser.add_argument('--data_type', type=str, default='gc', help='data type')
-    parser.add_argument('--data_name', type=str, default='CIFAR10', help='data name')
-    # models
+    parser.add_argument('--data_type', type=str, default='nc', help='data type')
+    parser.add_argument('--data_name', type=str, default='SBM_PATTERN', help='data name')
+    # model
     parser.add_argument('--readout', type=str, default='mean', help='graph read out')
-    parser.add_argument('--layers', type=int, default=2, help='total number of layers')
-    parser.add_argument('--nodes', type=int, default=4, help='total number of nodes')
+    parser.add_argument('--layers', type=int, default=4, help='total number of layers')
     parser.add_argument('--feature_dim', type=int, default=70, help='number of features')
+    parser.add_argument('--nodes', type=int, default=3, help='total number of nodes')
     # train
-    parser.add_argument('--batch_size', type=int, default=128, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=32, help='batch size')
     parser.add_argument('--workers', type=int, default=0, help='workers')
-    parser.add_argument('--epochs', type=int, default=100, help='num of training epochs')
+    parser.add_argument('--epochs', type=int, default=200, help='num of training epochs')
     parser.add_argument('--learning_rate', type=float, default=0.025, help='init learning rate')
-    parser.add_argument('--learning_rate_min', type=float, default=0.001, help='min learning rate')
+    parser.add_argument('--learning_rate_min', type=float, default=0.00001, help='min learning rate')
     parser.add_argument('--weight_decay', type=float, default=3e-4, help='weight decay')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
     parser.add_argument('--optimizer', type = str, default='SGD', help='optimizer')
     parser.add_argument('--dropout', type=float, default=0.0, help='dropout')
-    # report and save
+    # save and report
     parser.add_argument('--save', type=str, default='EXP', help='experiment name')
-
     args = parser.parse_args()
+
     log_format = '%(asctime)s %(message)s'
     logging.basicConfig(stream=sys.stdout, level=logging.INFO,format=log_format, datefmt='%m/%d %I:%M:%S %p')
     fh = logging.FileHandler(os.path.join(args.save, 'log.txt'))
