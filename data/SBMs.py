@@ -151,7 +151,7 @@ class SBMsDataset(torch.utils.data.Dataset):
         snorm_e = torch.cat(tab_snorm_e).sqrt()
         batched_graph = dgl.batch(graphs)
 
-        return batched_graph, labels, snorm_n, snorm_e
+        return batched_graph, labels
 
     def _add_self_loops(self):
         
