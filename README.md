@@ -10,7 +10,7 @@ Inspired by the strong searching capability of neural architecture search (NAS) 
 <img src="./pics/example.png" width="40%">    <img src="./pics/space.png" width="53%">
 
 
-## Getting Started
+## A. Getting Started
 
 ### 0. Prerequisites
 * Linux 
@@ -93,24 +93,11 @@ sh scripts/train_superpixels_cifar10.sh [gpu_id]
 
 ---
 
-## Results
+## B. Results
 
-We show 4-layer graph neural networks searched by GNAS.
+Here, we show 4-layer graph neural networks searched by GNAS on five datasets at three graph tasks.
 
-### ZINC
-<img src="./pics/ZINC.png" width="80%">
-
-### MNIST
-<img src="./pics/MNIST.png" width="80%">
-
-### CIFAR10
-<img src="./pics/CIFAR10.png" width="80%">
-
-### PATTERN
-<img src="./pics/PATTERN.png" width="80%">
-
-### CLUSTER
-<img src="./pics/CLUSTER.png" width="80%">
+![](./pics/all.png)
 
 ## Reference
 
