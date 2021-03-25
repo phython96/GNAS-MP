@@ -1,4 +1,5 @@
 # Rethinking Graph Neural Architecture Search from Message-passing
+---
 
 ## Abstract
 
@@ -70,7 +71,8 @@ MNIST_Net = [Genotype(alpha_cell=[('f_sparse', 1, 0), ('f_dense', 2, 1), ('f_spa
 
 ### 4. Training 
 **Before training, you must confim that there is a genotype of searched graph neural network in file "./configs/genotypes.py".**
-We also provided scripts for easily training graph neural networks searched by GNAS.
+
+We provided scripts for easily training graph neural networks searched by GNAS.
 
 ```sh
 # training on ZINC dataset at graph regression task
@@ -89,4 +91,27 @@ sh scripts/train_superpixels_mnist.sh [gpu_id]
 sh scripts/train_superpixels_cifar10.sh [gpu_id]
 ```
 
+---
 
+## Results
+
+We show 4-layer graph neural networks searched by GNAS.
+
+### ZINC
+<img src="./pics/ZINC.png" width="80%">
+
+### MNIST
+<img src="./pics/MNIST.png" width="80%">
+
+### CIFAR10
+<img src="./pics/CIFAR10.png" width="80%">
+
+### PATTERN
+<img src="./pics/PATTERN.png" width="80%">
+
+### CLUSTER
+<img src="./pics/CLUSTER.png" width="80%">
+
+## Reference
+
+to be updated
