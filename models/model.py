@@ -24,32 +24,35 @@ class MLPReadout(nn.Module):
 
 class OpModule(nn.Module):
 
-	def __init__(self, operation_name, feature_dim, dropout):
+	def __init__(self, args, operation_name):
 		super(OpModule, self).__init__()
-		self._feature_dim = feature_dim
-		self._dropout = dropout
-		args = {'feature_dim' : feature_dim}
+		self.args = args
+		self._feature_dim = args.feature_dim
+		self._dropout = args.dropout
+		args = {'feature_dim' : self._feature_dim}
 		self.op = MIXED_OPS[operation_name](args)
-		self.linear = nn.Linear(feature_dim, feature_dim, bias = True)
-		self.batchnorm_h = nn.BatchNorm1d(feature_dim)
+		self.linear = nn.Linear(self._feature_dim, self._feature_dim, bias = True)
+		self.batchnorm_h = nn.BatchNorm1d(self._feature_dim)
 		self.activate = nn.ReLU()
 
 	def forward(self, g, h, h_in) :
 		h = self.op(g, h, h_in)
 		h = self.linear(h)
-		h = self.batchnorm_h(h) 
+		if self.args.op_norm:
+			h = self.batchnorm_h(h) 
 		h = self.activate(h)
 		#h = F.dropout(h, self._dropout, training=self.training)
 		return h
 
 class Cell(nn.Module):
 
-	def __init__(self, genotype, feature_dim, dropout):
+	def __init__(self, args, genotype):
 		super(Cell, self).__init__()
+		self.args = args
 		self._genotype = genotype
 		self._nb_nodes = len(set([edge[1] for edge in genotype.alpha_cell]))
-		self._feature_dim = feature_dim
-		self._dropout = dropout
+		self._feature_dim = args.feature_dim
+		self._dropout = args.dropout
 		self._concat_node = list(range(1, 1 + self._nb_nodes)) if genotype.concat_node is None else genotype.concat_node
 		self.batchnorm_h = nn.BatchNorm1d(self._feature_dim)
 		self.activate = nn.ReLU()
@@ -60,7 +63,7 @@ class Cell(nn.Module):
 		self._ops = nn.ModuleList([nn.ModuleList([nn.ModuleList() for i in range(n)]) for n in range(1, 1 + nb_nodes)])
 		for (op_name, center_node, pre_node) in self._genotype.alpha_cell:
 			center_node -= 1
-			self._ops[center_node][pre_node].append(OpModule(op_name, self._feature_dim, self._dropout))
+			self._ops[center_node][pre_node].append(OpModule(self.args, op_name))
 		self.concat = nn.Linear(len(self._concat_node) * self._feature_dim, self._feature_dim)
 
 	def forward(self, g, h):
@@ -85,28 +88,30 @@ class Cell(nn.Module):
 
 class Network(nn.Module):
 	
-	def __init__(self, genotype, layers, in_dim, feature_dim, num_classes, criterion, data_type='gc', readout='mean', dropout = 0.0):
+	#def __init__(self, genotype, layers, in_dim, feature_dim, num_classes, criterion, data_type='gc', readout='mean', dropout = 0.0):
+	def __init__(self, args, genotype, num_classes, in_dim, criterion):
 		super(Network, self).__init__()
+		self.args = args
 		self._genotype = genotype
-		self._layers = layers
+		self._layers = args.layers
 		self._in_dim = in_dim
-		self._feature_dim = feature_dim
+		self._feature_dim = args.feature_dim
 		self._num_classes = num_classes
 		self._criterion = criterion
-		self._data_type = data_type
-		self._readout = readout
-		self._dropout = dropout
+		self._data_type = args.data_type
+		self._readout = args.readout
+		self._dropout = args.dropout
 		
-		if data_type in ['nc', 'rg']:
-			self.embedding_h = nn.Embedding(self._in_dim, feature_dim)  # node feat is an integer
+		if self._data_type in ['nc', 'rg']:
+			self.embedding_h = nn.Embedding(self._in_dim, self._feature_dim)  # node feat is an integer
 		else:
-			self.embedding_h = nn.Linear(self._in_dim, feature_dim)
+			self.embedding_h = nn.Linear(self._in_dim, self._feature_dim)
 
 		if type(self._genotype) == list:
 			genotypes = self._genotype
 		else:
 			genotypes = [self._genotype for i in range(self._layers)]
-		self.cells = nn.ModuleList([Cell(genotypes[i], self._feature_dim, self._dropout) for i in range(self._layers)])
+		self.cells = nn.ModuleList([Cell(args, genotypes[i]) for i in range(self._layers)])
 		# judge whether link prediction task
 		outdim = self._feature_dim if self._data_type not in ['ec'] else 2 * self._feature_dim
 		self.classifier = MLPReadout(outdim, self._num_classes)

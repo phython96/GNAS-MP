@@ -7,4 +7,5 @@ CUDA_VISIBLE_DEVICES=$1 python train/sbms_train.py \
                     --epochs 150 \
                     --batch_size 32 \
                     --optimizer 'SGD' \
+                    --op_norm \
                     --learning_rate 0.025

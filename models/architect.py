@@ -27,11 +27,7 @@ class Architect(object):
         dtheta = _concat(torch.autograd.grad(loss, self.model.parameters(), allow_unused = False)).data + self.network_weight_decay * theta
         unrolled_model = self._construct_model_from_theta(theta.sub(eta, moment + dtheta))
         return unrolled_model
-    '''
-    architect.step(batch_graphs, batch_x, batch_labels,
-                   batch_graphs_search, batch_x_search, batch_labels_search,
-                   lr, optimizer, unrolled=args.unrolled)
-    '''
+
     def step(self, batch_graphs, batch_x, batch_labels,
                    batch_graphs_search, batch_x_search, batch_labels_search,
                    eta, optimizer, unrolled):

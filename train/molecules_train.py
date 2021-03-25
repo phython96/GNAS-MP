@@ -44,7 +44,8 @@ def start(args):
     
     genotype = ZINC_Net
     print('=> loading from genotype: \n', genotype)
-    model = Network(genotype, args.layers, in_dim, args.feature_dim, num_classes, criterion, args.data_type, args.readout, args.dropout)
+    # model = Network(genotype, args.layers, in_dim, args.feature_dim, num_classes, criterion, args.data_type, args.readout, args.dropout)
+    model = Network(args, genotype, num_classes, in_dim, criterion)
     model = model.cuda()
     logging.info("=> param size = %f", count_parameters_in_MB(model) * 1e6)
 
@@ -172,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('--layers', type=int, default=4, help='total number of layers')
     parser.add_argument('--nodes', type=int, default=3, help='total number of nodes')
     parser.add_argument('--feature_dim', type=int, default=70, help='number of features')
+    parser.add_argument('--op_norm', action='store_true', default=False)
     # train
     parser.add_argument('--epochs', type=int, default=150, help='num of training epochs')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size')

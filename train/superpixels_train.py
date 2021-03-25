@@ -51,7 +51,7 @@ def start(args):
         exit()
 
     print('=> loading from genotype: \n', genotype)
-    model = Network(genotype, args.layers, in_dim, args.feature_dim, num_classes, criterion, args.data_type, args.readout, args.dropout)
+    model = Network(args, genotype, num_classes, in_dim, criterion)
     model = model.cuda()
     logging.info("param size = %fMB", count_parameters_in_MB(model))
 
@@ -179,6 +179,7 @@ if __name__ == '__main__':
     parser.add_argument('--layers', type=int, default=2, help='total number of layers')
     parser.add_argument('--nodes', type=int, default=4, help='total number of nodes')
     parser.add_argument('--feature_dim', type=int, default=70, help='number of features')
+    parser.add_argument('--op_norm', action='store_true', default=False)
     # train
     parser.add_argument('--batch_size', type=int, default=128, help='batch size')
     parser.add_argument('--workers', type=int, default=0, help='workers')
