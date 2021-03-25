@@ -1,6 +1,7 @@
 # Rethinking Graph Neural Architecture Search from Message-passing
----
 
+
+<a><img src = "https://img.shields.io/badge/arxiv-2888.88888-critical"></img></a> <a><img src = "https://img.shields.io/badge/License-MIT-yellow.svg"></img></a> 
 ## Abstract
 
 > Graph neural networks (GNNs) emerged recently as a standard toolkit for learning from data on graphs. 
@@ -33,7 +34,7 @@ conda activate gnas
 
 The datasets are provided by project [benchmarking-gnns](https://github.com/graphdeeplearning/benchmarking-gnns), you can click [here](https://github.com/graphdeeplearning/benchmarking-gnns/blob/master/docs/02_download_datasets.md) to download all the required datasets. 
 
-### 3. Searching with GNAS
+### 3. Searching
 We have provided scripts for easily searching graph neural networks on five datasets. 
 
 ```sh
