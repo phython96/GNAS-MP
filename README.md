@@ -1,7 +1,7 @@
 # Rethinking Graph Neural Architecture Search from Message-passing
 
 
-<a><img src = "https://img.shields.io/badge/arxiv-2888.88888-critical"></img></a> <a><img src = "https://img.shields.io/badge/License-MIT-yellow.svg"></img></a> 
+<a><img src = "https://img.shields.io/badge/arxiv-2888.88888-critical"></img></a> <a href="https://opensource.org/licenses/MIT"><img src = "https://img.shields.io/badge/License-MIT-yellow.svg"></img></a> 
 ## Abstract
 
 > Graph neural networks (GNNs) emerged recently as a standard toolkit for learning from data on graphs. 
