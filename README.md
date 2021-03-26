@@ -1,7 +1,7 @@
 # Rethinking Graph Neural Architecture Search from Message-passing
 
 
-<a><img src = "https://img.shields.io/badge/arxiv-2888.88888-critical"></img></a> <a href="https://opensource.org/licenses/MIT"><img src = "https://img.shields.io/badge/License-MIT-yellow.svg"></img></a> 
+<a href="https://arxiv.org/submit/3669158/view"><img src = "https://img.shields.io/badge/arxiv-2888.88888-critical"></img></a> <a href="https://opensource.org/licenses/MIT"><img src = "https://img.shields.io/badge/License-MIT-yellow.svg"></img></a> 
 ## Intro
 
 > The GNAS can automatically learn better architecture with the optimal depth of message passing on the graph. Specifically, we design Graph Neural Architecture Paradigm (GAP) with tree-topology computation procedure and two types of fine-grained atomic operations (feature filtering \& neighbor aggregation) from message-passing mechanism to construct powerful graph network search space. Feature filtering performs adaptive feature selection, and neighbor aggregation captures structural information and calculates neighbors’ statistics. Experiments show that our GNAS can search for better GNNs with multiple message-passing mechanisms and optimal message-passing depth. 
