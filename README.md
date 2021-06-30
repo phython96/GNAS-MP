@@ -100,4 +100,10 @@ Here, we show 4-layer graph neural networks searched by GNAS on five datasets at
 
 ## Reference
 
-to be updated
+@inproceedings{cai2021rethinking,
+  title={Rethinking Graph Neural Architecture Search from Message-passing},
+  author={Cai, Shaofei and Li, Liang and Deng, Jincan and Zhang, Beichen and Zha, Zheng-Jun and Su, Li and Huang, Qingming},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={6657--6666},
+  year={2021}
+}
