@@ -1,6 +1,7 @@
 import os
 import sys
 import dgl
+import yaml
 import torch
 import argparse
 import numpy as np
@@ -31,14 +32,14 @@ class Trainer(object):
         if not os.path.isfile(args.load_genotypes):
             raise Exception('Genotype file not found!')
         else:
-            with open(args.load_genotypes) as f:
-                genotypes      = eval(f.read())
-                args.nb_layers = len(genotypes)
-                args.nb_nodes  = len({ x for x, a, b, c in genotypes[0].V})
+            with open(args.load_genotypes, "r") as f:
+                genotypes      = yaml.load(f)
+                args.nb_layers = len(genotypes['Genotype'])
+                args.nb_nodes  = len({ edge['dst'] for edge in genotypes['Genotype'][0]['topology'] })
         self.metric    = load_metric(args)
         self.loss_fn   = get_loss_fn(args).cuda()
         trans_input_fn = get_trans_input(args)
-        self.model     = Model_Train(args, genotypes, trans_input_fn, self.loss_fn).to("cuda")
+        self.model     = Model_Train(args, genotypes['Genotype'], trans_input_fn, self.loss_fn).to("cuda")
         annouce(f'=> Subnet Parameters: {count_parameters_in_MB(self.model)}', 33)
 
         annouce(f'=> [3] Preparing Dataset')
@@ -139,22 +140,8 @@ class Trainer(object):
         return lr
     
 
-    def debug(self):
-        #! test ntk.py 
-        from nastools.ntk import get_ntk_n
-        result = get_ntk_n(self.train_queue, [self.model, self.model], num_batch=1)
-        import ipdb; ipdb.set_trace()
-        from nastools.linear_region_counter import Linear_Region_Collector
-        lrc_model = Linear_Region_Collector([self.model, self.model], batch_size=16, sample_batch=10, dataloader=self.train_queue)
-        result = lrc_model.forward_batch_sample()
-        import ipdb; ipdb.set_trace()
-
-
-
     def run(self):
         
-        self.debug()
-
         annouce(f'=> [5] Train Genotypes')
         self.lr = self.args.lr
         for i_epoch in range(self.args.epochs):
@@ -188,12 +175,13 @@ class Trainer(object):
                 #! 1. 准备训练集数据
                 G = batch_graphs.to(device)
                 V = batch_graphs.ndata['feat'].to(device)
-                E = batch_graphs.edata['feat'].to(device)
+                # E = batch_graphs.edata['feat'].to(device)
                 batch_targets = batch_targets.to(device)
                 # plot_graphs_threshold(self.args, G, [E, E, E, E])
                 #! 2. 优化模型参数
                 self.optimizer.zero_grad()
-                batch_scores = self.model((G, V, E))
+                input        = {'G': G, 'V': V}
+                batch_scores = self.model(input)
                 loss         = self.loss_fn(batch_scores, batch_targets, graph = batch_graphs, stage = stage)
                 loss.backward()
                 self.optimizer.step()
@@ -223,10 +211,11 @@ class Trainer(object):
             for i_step, (batch_graphs, batch_targets) in enumerate(t):
                 G = batch_graphs.to(device)
                 V = batch_graphs.ndata['feat'].to(device)
-                E = batch_graphs.edata['feat'].to(device)
+                # E = batch_graphs.edata['feat'].to(device)
                 batch_targets = batch_targets.to(device)
-                batch_scores  = self.model((G, V, E))
-                loss          = self.loss_fn(batch_scores, batch_targets, graph = batch_graphs, stage = stage)
+                input        = {'G': G, 'V': V}
+                batch_scores = self.model(input)
+                loss         = self.loss_fn(batch_scores, batch_targets, graph = batch_graphs, stage = stage)
 
                 epoch_loss   += loss.detach().item()
                 epoch_metric += self.metric(batch_scores, batch_targets, graph = batch_graphs, stage = stage)
@@ -249,20 +238,17 @@ if __name__ == '__main__':
     annouce('== Graph Neural Architecture Search V2.0 ==', 31)
     annouce('===========================================', 31)
 
-    parser = argparse.ArgumentParser('Graph Neural Architecture Search V2.0')
+    parser = argparse.ArgumentParser('Rethinking Graph Neural Architecture Search From Message Passing')
     parser.add_argument('--task', type = str, default = 'graph_level')
     parser.add_argument('--data', type = str, default = 'ZINC')
     parser.add_argument('--extra', type = str, default = '')
     parser.add_argument('--in_dim_V', type = int, default = 28)
-    parser.add_argument('--in_dim_E', type = int, default = 4)
     parser.add_argument('--node_dim', type = int, default = 70)
-    parser.add_argument('--edge_dim', type = int, default = 70)
     parser.add_argument('--nb_layers', type = int, default = 4)
-    parser.add_argument('--nb_nodes', type = int, default = 3)
+    parser.add_argument('--nb_nodes', type = int, default = 4)
     parser.add_argument('--nb_classes', type = int, default = 1)
     parser.add_argument('--leaky_slope', type = float, default = 1e-2)
     parser.add_argument('--batchnorm_op', action = 'store_true', default = False)
-    parser.add_argument('--edge_feature', action = 'store_true', default = False)
     parser.add_argument('--nb_mlp_layer', type = int, default = 4)
     parser.add_argument('--dropout', type = float, default = 0.0)
     parser.add_argument('--pos_encode', type = int, default = 0)

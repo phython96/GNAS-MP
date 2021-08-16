@@ -1,19 +1,77 @@
 Genotype:
     -
+        id: 1
         topology: 
             - 
                 src: 0
                 dst: 1
                 ops: 'V_Max'
             -
-                src: 0
-                dst: 2
-                ops: 'V_Mean'
-            -
                 src: 1
-                dst: 3
+                dst: 2
                 ops: 'V_Sum'
             -
                 src: 2
+                dst: 3
+                ops: 'V_Sum'
+            -
+                src: 3
                 dst: 4
-                ops: 'V_Min'
+                ops: 'V_Max'
+    -
+        id: 2
+        topology: 
+            - 
+                src: 0
+                dst: 1
+                ops: 'V_Max'
+            -
+                src: 1
+                dst: 2
+                ops: 'V_Sum'
+            -
+                src: 2
+                dst: 3
+                ops: 'V_Sum'
+            -
+                src: 3
+                dst: 4
+                ops: 'V_Max'
+    -
+        id: 3
+        topology: 
+            - 
+                src: 0
+                dst: 1
+                ops: 'V_Max'
+            -
+                src: 1
+                dst: 2
+                ops: 'V_Sum'
+            -
+                src: 2
+                dst: 3
+                ops: 'V_Sum'
+            -
+                src: 3
+                dst: 4
+                ops: 'V_Max'
+    -
+        id: 4
+        topology: 
+            - 
+                src: 0
+                dst: 1
+                ops: 'V_Max'
+            -
+                src: 1
+                dst: 2
+                ops: 'V_Sum'
+            -
+                src: 2
+                dst: 3
+                ops: 'V_Sum'
+            -
+                src: 3
+                dst: 4
+                ops: 'V_Max'

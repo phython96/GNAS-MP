@@ -18,7 +18,6 @@ class Model_Train(nn.Module):
         self.genotypes      = genotypes
         self.cells          = nn.ModuleList([Cell(args, genotypes[i]) for i in range(self.nb_layers)])
         self.loss_fn        = loss_fn
-        self.trans_input_fn = trans_input_fn
         self.trans_input    = TransInput(trans_input_fn)
         self.trans_output   = TransOutput(args)
         if args.pos_encode > 0:

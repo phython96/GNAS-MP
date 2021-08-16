@@ -49,7 +49,7 @@ class Cell(nn.Module):
             agg = []
             for i, src in enumerate(self.link_dict[dst]):
                 sub_input = {'G': G, 'V': states[src], 'V_in': V_in}
-                agg.append(self.module_dict_V[dst][i](sub_input))
+                agg.append(self.module_dict[dst][i](sub_input))
             states.append(sum(agg))
 
         V = self.trans_concat_V(torch.cat(states[1:], dim = 1))

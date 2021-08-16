@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from sklearn.metrics import f1_score
 from sklearn.metrics import confusion_matrix
-from models.operations import V_OPS, E_OPS, get_OPS
+from models.operations import OPS
 
 class DotDict(dict):
     def __init__(self, **kwds):
