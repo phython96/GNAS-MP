@@ -1,0 +1,19 @@
+Genotype:
+    -
+        topology: 
+            - 
+                src: 0
+                dst: 1
+                ops: 'V_Max'
+            -
+                src: 0
+                dst: 2
+                ops: 'V_Mean'
+            -
+                src: 1
+                dst: 3
+                ops: 'V_Sum'
+            -
+                src: 2
+                dst: 4
+                ops: 'V_Min'
