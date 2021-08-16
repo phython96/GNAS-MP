@@ -1,0 +1,15 @@
+name: gnasmp
+channels:
+  - defaults
+  - dglteam
+dependencies:
+  - python=3.6
+  - cudatoolkit=11.0
+  - dgl-cuda11.0
+  - pygraphviz
+  - pip:
+    - ipdb
+    - tqdm
+    - torch==1.5.0
+    - scikit-learn
+    - tensorboardX
