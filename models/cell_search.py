@@ -7,26 +7,9 @@ from models.operations import OPS
 from models.mixed import Mixed
 
 '''
-Genotype:
-    -
-        id: 1
-        topology:
-            -
-                src: x
-                dst: y
-                ops: 'z'
-'''
-
-'''
-
 cell_arch : 
     topology: list
-        (src, dst, weights)
-
-    'V' : list
-        (V_i, V_j, E_k, weights)
-    'E' : list
-        (E_i, V_j, E_k, weights)
+        (src, dst, weights, ops)
 '''
 
 class Cell(nn.Module):
@@ -45,11 +28,11 @@ class Cell(nn.Module):
     def load_arch(self):
         link_para = {}
         link_dict = {}
-        for src, dst, w in self.cell_arch:
+        for src, dst, w, ops in self.cell_arch:
             if dst not in link_dict:
                 link_dict[dst] = []
             link_dict[dst].append((src, w))
-            link_para[str((src, dst))] = Mixed(self.args, OPS)
+            link_para[str((src, dst))] = Mixed(self.args, ops)
         
         self.link_dict = link_dict
         self.link_para = nn.ModuleDict(link_para)

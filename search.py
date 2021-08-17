@@ -13,6 +13,7 @@ from models.architect import Architect
 # from utils.visualize import *
 from utils.utils import DecayScheduler
 
+
 class Searcher(object):
     
     def __init__(self, args):
@@ -36,7 +37,7 @@ class Searcher(object):
         self.console.print(f'=> [3] Preparing dataset')
         self.dataset     = load_data(args)
         if args.pos_encode > 0:
-            #! 加载 - 位置编码
+            #! add positional encoding
             self.console.print(f'==> [3.1] Adding positional encodings')
             self.dataset._add_positional_encodings(args.pos_encode)
         self.search_data = self.dataset.train
@@ -134,11 +135,11 @@ class Searcher(object):
             DecayScheduler().step(i_epoch)
 
             with torch.no_grad():
-                val_result    = self.infer(self.val_queue)
+                val_result  = self.infer(self.val_queue)
                 self.console.print(f"[yellow]=> [{i_epoch}] valid result  - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}")
 
-                test_result   = self.infer(self.test_queue)
-                self.console.print(f"[red]=> [{i_epoch}] test  result  - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}", 31)
+                test_result = self.infer(self.test_queue)
+                self.console.print(f"[red]=> [{i_epoch}] test  result  - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}")
 
 
     def search(self):
@@ -151,18 +152,18 @@ class Searcher(object):
 
         with tqdm(self.para_queue, desc = desc, ascii = True) as t:
             for i_step, (batch_graphs, batch_targets) in enumerate(t):
-                #! 1. 准备训练集数据
+                #! 1. preparing training datasets
                 G = batch_graphs.to(device)
                 V = batch_graphs.ndata['feat'].to(device)
                 # E = batch_graphs.edata['feat'].to(device)
                 batch_targets = batch_targets.to(device)
-                #! 2. 准备验证集数据
+                #! 2. preparing validating datasets
                 batch_graphs_search, batch_targets_search = next(iter(self.arch_queue))
                 GS = batch_graphs_search.to(device)
                 VS = batch_graphs_search.ndata['feat'].to(device)
                 # ES = batch_graphs_search.edata['feat'].to(device)
                 batch_targets_search = batch_targets_search.to(device)
-                #! 3. 优化结构参数
+                #! 3. optimizing architecture topology parameters
                 self.architect.step(
                     input_train       = {'G': G, 'V': V},
                     target_train      = batch_targets,
@@ -172,7 +173,7 @@ class Searcher(object):
                     network_optimizer = self.optimizer,
                     unrolled          = self.args.unrolled
                 )
-                #! 4. 优化模型参数
+                #! 4. optimizing model parameters
                 self.optimizer.zero_grad()
                 batch_scores  = self.model({'G': G, 'V': V})
                 loss          = self.loss_fn(batch_scores, batch_targets)
