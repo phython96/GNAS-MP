@@ -147,12 +147,12 @@ class V_Sparse(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.W = nn.Linear(args.node_dim*2, args.node_dim, bias = True)
-        self.a = nn.Linear(self.node_dim, bias = False)
+        self.a = nn.Linear(args.node_dim, 1, bias = False)
 
     def forward(self, input):
         V, V_in = input['V'], input['V_in']
         gates = torch.cat([V, V_in], dim = 1)
-        gates = self.W(gates)
+        # gates = self.W(gates)
         gates = torch.relu(self.W(gates))
         gates = self.a(gates)
         return torch.sigmoid(gates) * V

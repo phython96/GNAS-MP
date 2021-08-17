@@ -21,8 +21,7 @@ class Mixed(nn.Module):
 
     def forward(self, input, weight):
         '''
-        weights 是以操作名为key, 操作权重为val的字典
-        operation name : operation weight
+        weight: a dict whose 'key' is operation name and 'val' is operation weight
         '''
         weight = weight.softmax(0)
         output = sum( weight[i] * self.candidates[name](input) for i, name in enumerate(self.OPS) )
