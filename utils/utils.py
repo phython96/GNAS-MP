@@ -221,40 +221,39 @@ class CiteCriterion(nn.Module):
 
 
 # ----------------------------------------------------------------
-from collections import namedtuple
-Genotype = namedtuple('Genotype', 'V E')
-
-def genotype_type(args, arch_para_type, arch_topo_type, type):
-    result         = []
-    OPS            = get_OPS(type)
-    arch_para_type = arch_para_type.softmax(dim = 1)
-    link           = [ [] for i in range(args.nb_nodes + 1) ]
-    for Si, Vj, Ek, L in arch_topo_type:
-        link[Si].append((Vj, Ek, arch_para_type[L]))
-    for i_node in range(1, args.nb_nodes + 1):
-        nb_link   = len(link[i_node])
-        best_links = sorted(
-            range(nb_link), 
-            key = lambda lk : -max(link[i_node][lk][-1][j] for j in range(len(OPS)) if j != OPS.index(f'{type}_None'))
-        )[:2] #! 截取的操作数量
-        for blink in best_links:
-            blink   = link[i_node][blink]
-            best_op = torch.argmax(blink[-1][1:]).item() + 1
-            result.append((i_node, blink[0], blink[1], OPS[best_op]))
-    return result
+def cell_genotype(args, id, arch_para, arch_topo):
+    result = {'id': id, 'topology': []}
+    link = [ [] for i in range(args.nb_nodes*3+1) ]
     
+    for src, dst, w, ops in arch_topo:
+        link[dst].append((src, ops, arch_para[w]))
+    for dst in range(1, args.nb_nodes*3+1):
+        nb_link = len(link[dst])
+        best_links = sorted(
+            range(nb_link),
+            key = lambda lk: -max(
+                link[dst][lk][-1][j] 
+                    for j in range(len(link[dst][lk][-2]))
+                        if 'V_None' not in link[dst][lk][-2] or j != link[dst][lk][-2].index('V_None')
+            )
+        )[:1] #! 截取的操作数量
+        for blink in best_links:
+            blink = link[dst][blink]
+            if 'V_None' in blink[-2]:
+                best_op = torch.argmax(blink[-1][1:]).item() + 1
+            else:
+                best_op = torch.argmax(blink[-1]).item()
+            src = blink[0]
+            ops = blink[1][best_op]
+            result['topology'].append({'src': src, 'dst': dst, 'ops': ops})
+    return result
 
-def genotype(args, arch_para, arch_topo):
-    #! 根据结构参数离散化得到基因型
-    genotype = Genotype(V = genotype_type(args, arch_para['V'], arch_topo['V'], 'V'),
-                        E = genotype_type(args, arch_para['E'], arch_topo['E'], 'E'))
-    return genotype
-
-def genotypes(args, cell_arch_para, cell_arch_topo):
-    genotypes = []
-    for layer_para, layer_topo in zip(cell_arch_para, cell_arch_topo):
-        genotypes.append(genotype(args, layer_para, layer_topo))
-    return genotypes
+def genotypes(args, arch_paras, arch_topos):
+    result = {'Genotype': []}
+    for id in range(args.nb_layers):
+        cell_result = cell_genotype(args, id, arch_paras[id], arch_topos[id])
+        result['Genotype'].append(cell_result)
+    return result
 
 # ----------------------------------------------------------------
 import math
@@ -292,14 +291,3 @@ class DecayScheduler(object):
         else:
             self.decay_rate = self.base_lr
 
-
-def annouce(content, color = None):
-    if type(content) != str:
-        print(content)
-    else:
-        if color:
-            bg = f'\033[1;{color};40m'
-            ed = '\033[0m'
-        else:
-            bg, ed = '', ''
-        print(bg + content + ed)

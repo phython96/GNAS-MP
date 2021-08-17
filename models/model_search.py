@@ -55,6 +55,7 @@ class Model_Search(nn.Module):
                 arch_topo.append((src, dst, w, First_Stage))
                 w += 1
         for dst in range(self.args.nb_nodes+1, 2*self.args.nb_nodes+1):
+            src = dst - self.args.nb_nodes
             arch_topo.append((src, dst, w, Second_Stage))
             w += 1
         for dst in range(2*self.args.nb_nodes+1, 3*self.args.nb_nodes+1):
@@ -67,20 +68,16 @@ class Model_Search(nn.Module):
     def init_cell_arch_para(self):
         cell_arch_para = []
         for i_layer in range(self.nb_layers):
-            arch_para_first  = self.init_arch_para(self.cell_arch_topo[i_layer], First_Stage)
-            cell_arch_para.extend(arch_para_first)
-            arch_para_second = self.init_arch_para(self.cell_arch_topo[i_layer], Second_Stage)
-            cell_arch_para.extend(arch_para_second)
-            arch_para_third  = self.init_arch_para(self.cell_arch_topo[i_layer], Third_Stage)
-            cell_arch_para.extend(arch_para_third)
-            self.nb_cell_topo = len(arch_para_first) + len(arch_para_second) + len(arch_para_third)
+            arch_para  = self.init_arch_para(self.cell_arch_topo[i_layer])
+            cell_arch_para.extend(arch_para)
+            self.nb_cell_topo = len(arch_para)
         return cell_arch_para
 
 
-    def init_arch_para(self, arch_topo, stage_ops):
+    def init_arch_para(self, arch_topo):
         arch_para = []
-        for _ in range(len(arch_topo)):
-            arch_para.append(Variable(1e-3 * torch.rand(len(stage_ops)).cuda(), requires_grad = True))
+        for src, dst, w, ops in arch_topo:
+            arch_para.append(Variable(1e-3 * torch.rand(len(ops)).cuda(), requires_grad = True))
         return arch_para
 
 

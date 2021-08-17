@@ -18,7 +18,7 @@ OPS = {
 
 
 First_Stage  = ['V_None', 'V_I', 'V_Sparse', 'V_Dense']
-Second_Stage = ['V_I', 'V_Mean', 'V_Sum', 'V_Max', 'V_Min']
+Second_Stage = ['V_I', 'V_Mean', 'V_Sum', 'V_Max']
 Third_Stage  = ['V_None', 'V_I', 'V_Sparse', 'V_Dense']
 
 
@@ -51,13 +51,13 @@ class NodePooling(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.A        = nn.Linear(args.node_dim, args.node_dim)
-        self.B        = nn.Linear(args.node_dim, args.node_dim)
+        # self.B        = nn.Linear(args.node_dim, args.node_dim)
         self.activate = nn.ReLU()
 
     def forward(self, V):
         V = self.A(V)
         V = self.activate(V)
-        V = self.B(V)
+        # V = self.B(V)
         return V
 
 
@@ -122,9 +122,11 @@ class V_Min(nn.Module):
     
     def __init__(self, args):
         super().__init__()
+        self.pooling    = NodePooling(args)
         
     def forward(self, input):
         G, V = input['G'], input['V']
+        G.ndata['V'] = self.pooling(V)
         G.update_all(fn.copy_u('V', 'M'), fn.min('M', 'V'))
         return G.ndata['V']
 

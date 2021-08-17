@@ -1,6 +1,7 @@
 import os
 import sys
 import dgl
+import yaml
 import torch
 import argparse
 import numpy as np
@@ -118,17 +119,20 @@ class Searcher(object):
         for i_epoch in range(self.args.epochs):
             self.scheduler.step()
             self.lr = self.scheduler.get_lr()[0]
-            # if i_epoch % self.args.report_freq == 0:
-            #     # todo report genotype
-            #     geno = genotypes(
-            #         args           = self.args,
-            #         cell_arch_para = self.model.arch_para_dict(),
-            #         cell_arch_topo = self.model.cell_arch_topo
-            #     )
-            #     plot_genotypes(args, i_epoch, geno)
-            #     print( geno )
-            #     # for i in range(self.args.nb_layers):
-            #     #     print( self.model.arch_para_dict()[i]['V'].softmax(1).detach().cpu().numpy() )
+            if i_epoch % self.args.report_freq == 0:
+                # todo report genotype
+                geno = genotypes(
+                    args       = self.args,
+                    arch_paras = self.model.group_arch_parameters(),
+                    arch_topos = self.model.cell_arch_topo,
+                )
+                print( geno )
+                with open(f'{self.args.arch_save}/{self.args.data}/{i_epoch}.yaml', "w") as f: 
+                    yaml.dump(geno, f)
+
+                for i in range(1):
+                    for p in self.model.group_arch_parameters()[i]:
+                        print(p.softmax(0).detach().cpu().numpy())
 
             search_result = self.search()
             self.console.print(f"=> [{i_epoch}] search result - loss: {search_result['loss']:.4f} - metric : {search_result['metric']:.4f}")
