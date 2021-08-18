@@ -6,12 +6,9 @@ CUDA_VISIBLE_DEVICES=$DEVICES python train.py \
 --data 'SBM_CLUSTER' \
 --nb_classes 6 \
 --in_dim_V 7 \
---in_dim_E 1 \
---edge_feature \
---pos_encode 20 \
+--pos_encode 0 \
 --batch 64 \
---node_dim 80 \
---edge_dim 50 \
+--node_dim 50 \
 --dropout 0.0 \
 --batchnorm_op \
 --epochs 200 \

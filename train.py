@@ -21,16 +21,16 @@ class Trainer(object):
         self.args = args
         self.console = Console()
 
-        self.console.print('=> [0] Initial TensorboardX')
+        self.console.log('=> [0] Initial TensorboardX')
         self.writer = SummaryWriter(comment = f'Task: {args.task}, Data: {args.data}, Geno: {args.load_genotypes}')
 
-        self.console.print('=> [1] Initial Settings')
+        self.console.log('=> [1] Initial Settings')
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
         torch.cuda.manual_seed(args.seed)
         cudnn.enabled   = True
 
-        self.console.print('=> [2] Initial Models')
+        self.console.log('=> [2] Initial Models')
         if not os.path.isfile(args.load_genotypes):
             raise Exception('Genotype file not found!')
         else:
@@ -42,20 +42,20 @@ class Trainer(object):
         self.loss_fn   = get_loss_fn(args).cuda()
         trans_input_fn = get_trans_input(args)
         self.model     = Model_Train(args, genotypes['Genotype'], trans_input_fn, self.loss_fn).to("cuda")
-        self.console.print(f'[red]=> Subnet Parameters: {count_parameters_in_MB(self.model)}')
+        self.console.log(f'[red]=> Subnet Parameters: {count_parameters_in_MB(self.model)}')
 
-        self.console.print(f'=> [3] Preparing Dataset')
+        self.console.log(f'=> [3] Preparing Dataset')
         self.dataset    = load_data(args)
         if args.pos_encode > 0:
             #! load - position encoding
-            self.console.print(f'==> [3.1] Adding positional encodings')
+            self.console.log(f'==> [3.1] Adding positional encodings')
             self.dataset._add_positional_encodings(args.pos_encode)
         self.train_data = self.dataset.train
         self.val_data   = self.dataset.val
         self.test_data  = self.dataset.test
         self.load_dataloader()
 
-        self.console.print(f'=> [4] Initial Optimizers')
+        self.console.log(f'=> [4] Initial Optimizers')
         if args.optimizer == 'SGD':
             self.optimizer   = torch.optim.SGD(
                 params       = self.model.parameters(),
@@ -138,29 +138,29 @@ class Trainer(object):
             self.scheduler.step(valid_loss)
             lr = self.optimizer.param_groups[0]['lr']
             if lr < 1e-5:
-                self.console.print('=> !! learning rate is smaller than threshold !!')
+                self.console.log('=> !! learning rate is smaller than threshold !!')
         return lr
     
 
     def run(self):
         
-        self.console.print(f'=> [5] Train Genotypes')
+        self.console.log(f'=> [5] Train Genotypes')
         self.lr = self.args.lr
         for i_epoch in range(self.args.epochs):
             #! training
             train_result = self.train(i_epoch, 'train')
-            self.console.print(f"=> train result [{i_epoch}] - loss: {train_result['loss']:.4f} - metric : {train_result['metric']:.4f}")
+            self.console.log(f"=> train result [{i_epoch}] - loss: {train_result['loss']:.4f} - metric : {train_result['metric']:.4f}")
             with torch.no_grad():
                 #! validating
                 val_result   = self.infer(i_epoch, self.val_queue, 'val')
-                self.console.print(f"[yellow]=> valid result [{i_epoch}] - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}")
+                self.console.log(f"=> valid result [{i_epoch}] - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}", style = 'yellow')
                 #! testing
                 test_result  = self.infer(i_epoch, self.test_queue, 'test')
-                self.console.print(f"[red]=> test  result [{i_epoch}] - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}")
+                self.console.log(f"=> test  result [{i_epoch}] - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}", style = 'red')
 
                 self.lr = self.scheduler_step(val_result['loss'])
         
-        self.console.print(f'=> Finished! Genotype = {args.load_genotypes}')
+        self.console.log(f'=> Finished! Genotype = {args.load_genotypes}')
     
 
     @record_run('train')
@@ -172,7 +172,7 @@ class Trainer(object):
         desc         = '=> training'
         device       = torch.device('cuda')
 
-        with tqdm(self.train_queue, desc = desc) as t:
+        with tqdm(self.train_queue, desc = desc, leave = False) as t:
             for i_step, (batch_graphs, batch_targets) in enumerate(t):
                 #! 1. preparing datasets
                 G = batch_graphs.to(device)
@@ -208,7 +208,7 @@ class Trainer(object):
         desc         = '=> inferring'
         device       = torch.device('cuda')
 
-        with tqdm(dataloader, desc = desc) as t:
+        with tqdm(dataloader, desc = desc, leave = False) as t:
             for i_step, (batch_graphs, batch_targets) in enumerate(t):
                 G = batch_graphs.to(device)
                 V = batch_graphs.ndata['feat'].to(device)
@@ -236,6 +236,7 @@ if __name__ == '__main__':
     from rich.console import Console
     from rich.table import Table
     from rich.panel import Panel
+    from rich.syntax import Syntax
     warnings.filterwarnings('ignore')
 
     parser = argparse.ArgumentParser('Rethinking Graph Neural Architecture Search From Message Passing')
@@ -268,8 +269,12 @@ if __name__ == '__main__':
 
     console = Console()
     args    = parser.parse_args()
-    title   = "Rethinking Graph Neural Architecture Search from Message Passing"
-    richPanel = Panel.fit("[gray]" + str(vars(args)), title = title)
+    title   = "[bold][red]Training from Genotype"
+    vis     = ""
+    for key, val in vars(args).items():
+        vis += f"{key}: {val}\n"
+    vis = Syntax(vis[:-1], "yaml", theme="monokai", line_numbers=True)
+    richPanel = Panel.fit(vis, title = title)
     console.print(richPanel)
     Trainer(args).run()
     # - end - #

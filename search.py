@@ -20,31 +20,31 @@ class Searcher(object):
         self.args = args
         self.console = Console()
 
-        self.console.print('=> [1] Initial settings')
+        self.console.log('=> [1] Initial settings')
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
         torch.cuda.manual_seed(args.seed)
         cudnn.benchmark = True
         cudnn.enabled   = True
 
-        self.console.print('=> [2] Initial models')
+        self.console.log('=> [2] Initial models')
         self.metric    = load_metric(args)
         self.loss_fn   = get_loss_fn(args).cuda()
         self.model     = Model_Search(args, get_trans_input(args), self.loss_fn).cuda()
-        self.console.print(f'=> Supernet Parameters: {count_parameters_in_MB(self.model)}', style = 'bold red')
+        self.console.log(f'=> Supernet Parameters: {count_parameters_in_MB(self.model)}', style = 'bold red')
 
-        self.console.print(f'=> [3] Preparing dataset')
+        self.console.log(f'=> [3] Preparing dataset')
         self.dataset     = load_data(args)
         if args.pos_encode > 0:
             #! add positional encoding
-            self.console.print(f'==> [3.1] Adding positional encodings')
+            self.console.log(f'==> [3.1] Adding positional encodings')
             self.dataset._add_positional_encodings(args.pos_encode)
         self.search_data = self.dataset.train
         self.val_data    = self.dataset.val
         self.test_data   = self.dataset.test
         self.load_dataloader()
 
-        self.console.print(f'=> [4] Initial optimizer')
+        self.console.log(f'=> [4] Initial optimizer')
         self.optimizer   = torch.optim.SGD(
             params       = self.model.parameters(),
             lr           = args.lr,
@@ -66,7 +66,7 @@ class Searcher(object):
         num_search  = int(len(self.search_data) * self.args.data_clip)
         indices     = list(range(num_search))
         split       = int(np.floor(self.args.portion * num_search))
-        self.console.print(f'=> Para set size: {split}, Arch set size: {num_search - split}')
+        self.console.log(f'=> Para set size: {split}, Arch set size: {num_search - split}')
         
         self.para_queue = torch.utils.data.DataLoader(
             dataset     = self.search_data,
@@ -113,7 +113,7 @@ class Searcher(object):
 
     def run(self):
 
-        self.console.print(f'=> [4] Search & Train')
+        self.console.log(f'=> [4] Search & Train')
         for i_epoch in range(self.args.epochs):
             self.scheduler.step()
             self.lr = self.scheduler.get_lr()[0]
@@ -133,15 +133,15 @@ class Searcher(object):
                 #         print(p.softmax(0).detach().cpu().numpy())
 
             search_result = self.search()
-            self.console.print(f"=> [{i_epoch}] search result - loss: {search_result['loss']:.4f} - metric : {search_result['metric']:.4f}")
-            DecayScheduler().step(i_epoch)
+            self.console.log(f"=> search result [{i_epoch}] - loss: {search_result['loss']:.4f} - metric : {search_result['metric']:.4f}", style = 'bold')
+            # DecayScheduler().step(i_epoch)
 
             with torch.no_grad():
                 val_result  = self.infer(self.val_queue)
-                self.console.print(f"[yellow]=> [{i_epoch}] valid result  - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}")
+                self.console.log(f"=> valid result [{i_epoch}] - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}", style = 'yellow')
 
                 test_result = self.infer(self.test_queue)
-                self.console.print(f"[red]=> [{i_epoch}] test  result  - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}")
+                self.console.log(f"=> test  result [{i_epoch}] - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}", style = 'red')
 
 
     def search(self):
@@ -152,7 +152,7 @@ class Searcher(object):
         desc         = '=> searching'
         device       = torch.device('cuda')
 
-        with tqdm(self.para_queue, desc = desc) as t:
+        with tqdm(self.para_queue, desc = desc, leave = False) as t:
             for i_step, (batch_graphs, batch_targets) in enumerate(t):
                 #! 1. preparing training datasets
                 G = batch_graphs.to(device)
@@ -200,7 +200,7 @@ class Searcher(object):
         desc         = '=> inferring'
         device       = torch.device('cuda')
 
-        with tqdm(dataloader, desc = desc, ascii = True) as t:
+        with tqdm(dataloader, desc = desc, leave = False) as t:
             for i_step, (batch_graphs, batch_targets) in enumerate(t):
                 G = batch_graphs.to(device)
                 V = batch_graphs.ndata['feat'].to(device)
@@ -224,6 +224,7 @@ if __name__ == '__main__':
     from rich.console import Console
     from rich.table import Table
     from rich.panel import Panel
+    from rich.syntax import Syntax
     warnings.filterwarnings('ignore')
 
     parser = argparse.ArgumentParser('Rethinking Graph Neural Architecture Search From Message Passing')
@@ -259,8 +260,12 @@ if __name__ == '__main__':
 
     console = Console()
     args = parser.parse_args()
-    title   = "Rethinking Graph Neural Architecture Search from Message Passing"
-    richPanel = Panel.fit("[gray]" + str(vars(args)), title = title)
+    title   = "[bold][red]Searching & Training"
+    vis = ""
+    for key, val in vars(args).items():
+        vis += f"{key}: {val}\n"
+    vis = Syntax(vis[:-1], "yaml", theme="monokai", line_numbers=True)
+    richPanel = Panel.fit(vis, title = title)
     console.print(richPanel)
     data_path = os.path.join(args.arch_save, args.data)
     if not os.path.exists(data_path):
