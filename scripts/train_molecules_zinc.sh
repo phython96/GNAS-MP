@@ -5,7 +5,7 @@ CUDA_VISIBLE_DEVICES=$DEVICES python train.py \
 --data 'ZINC' \
 --in_dim_V 28 \
 --batch 128 \
---node_dim 50 \
+--node_dim 60 \
 --dropout 0.0 \
 --pos_encode 0 \
 --batchnorm_op \

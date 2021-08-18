@@ -17,9 +17,9 @@ class Cell(nn.Module):
     def __init__(self, args, cell_arch):
         super().__init__()
         self.args           = args
-        self.nb_nodes       = args.nb_nodes
+        self.nb_nodes       = args.nb_nodes*3 #! warning 
         self.cell_arch      = cell_arch
-        self.trans_concat_V = nn.Linear(args.nb_nodes * args.node_dim, args.node_dim, bias = True)
+        self.trans_concat_V = nn.Linear(self.nb_nodes*args.node_dim, args.node_dim, bias = True)
         self.batchnorm_V    = nn.BatchNorm1d(args.node_dim)
         self.activate       = nn.LeakyReLU(args.leaky_slope)
         self.load_arch()
@@ -59,6 +59,4 @@ class Cell(nn.Module):
         V = F.dropout(V, self.args.dropout, training = self.training)
         V = V + V_in
         return {'G': G, 'V': V}
-
-
 

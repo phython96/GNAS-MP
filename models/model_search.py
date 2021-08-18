@@ -84,7 +84,7 @@ class Model_Search(nn.Module):
     def group_arch_parameters(self): 
         group = []
         start = 0
-        for i in range(self.nb_layers):
+        for _ in range(self.nb_layers):
             group.append(self.arch_parameters()[start: start + self.nb_cell_topo])
             start += self.nb_cell_topo
         return group

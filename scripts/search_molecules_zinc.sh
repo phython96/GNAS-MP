@@ -7,8 +7,8 @@ CUDA_VISIBLE_DEVICES=$DEVICES python search.py \
 --in_dim_V 28 \
 --batch 64 \
 --epochs 40 \
---node_dim 50 \
---nb_layers 4 \
+--node_dim 60 \
+--nb_layers 12 \
 --nb_nodes  3 \
 --portion 0.9 \
 --dropout 0.0 \

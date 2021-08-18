@@ -11,8 +11,6 @@ from data import *
 from models.model_search import *
 from utils.utils import *
 from models.architect import Architect
-# from utils.visualize import *
-from utils.utils import DecayScheduler
 
 
 class Searcher(object):
@@ -33,7 +31,7 @@ class Searcher(object):
         self.metric    = load_metric(args)
         self.loss_fn   = get_loss_fn(args).cuda()
         self.model     = Model_Search(args, get_trans_input(args), self.loss_fn).cuda()
-        self.console.print(f'[red]=> Supernet Parameters: {count_parameters_in_MB(self.model)}')
+        self.console.print(f'=> Supernet Parameters: {count_parameters_in_MB(self.model)}', style = 'bold red')
 
         self.console.print(f'=> [3] Preparing dataset')
         self.dataset     = load_data(args)
@@ -120,19 +118,19 @@ class Searcher(object):
             self.scheduler.step()
             self.lr = self.scheduler.get_lr()[0]
             if i_epoch % self.args.report_freq == 0:
-                # todo report genotype
                 geno = genotypes(
                     args       = self.args,
                     arch_paras = self.model.group_arch_parameters(),
                     arch_topos = self.model.cell_arch_topo,
                 )
-                print( geno )
                 with open(f'{self.args.arch_save}/{self.args.data}/{i_epoch}.yaml', "w") as f: 
                     yaml.dump(geno, f)
 
-                for i in range(1):
-                    for p in self.model.group_arch_parameters()[i]:
-                        print(p.softmax(0).detach().cpu().numpy())
+                # => report genotype
+                # print( geno )
+                # for i in range(1):
+                #     for p in self.model.group_arch_parameters()[i]:
+                #         print(p.softmax(0).detach().cpu().numpy())
 
             search_result = self.search()
             self.console.print(f"=> [{i_epoch}] search result - loss: {search_result['loss']:.4f} - metric : {search_result['metric']:.4f}")
@@ -154,7 +152,7 @@ class Searcher(object):
         desc         = '=> searching'
         device       = torch.device('cuda')
 
-        with tqdm(self.para_queue, desc = desc, ascii = True) as t:
+        with tqdm(self.para_queue, desc = desc) as t:
             for i_step, (batch_graphs, batch_targets) in enumerate(t):
                 #! 1. preparing training datasets
                 G = batch_graphs.to(device)
@@ -187,7 +185,6 @@ class Searcher(object):
                 epoch_loss   += loss.detach().item()
                 epoch_metric += self.metric(batch_scores, batch_targets)
                 t.set_postfix(lr         = self.lr,
-                              skip_decay = DecayScheduler().decay_rate, 
                               loss       = epoch_loss / (i_step + 1),
                               metric     = epoch_metric / (i_step + 1))
 
@@ -268,7 +265,6 @@ if __name__ == '__main__':
     data_path = os.path.join(args.arch_save, args.data)
     if not os.path.exists(data_path):
         os.mkdir(data_path)
-    with open(os.path.join(data_path, "configs.txt"), "w") as f:
-        f.write(str(args))
-    # DecayScheduler(T_max = args.epochs)
+    with open(os.path.join(data_path, "configs.yaml"), "w") as f:
+        yaml.dump(vars(args), f)
     Searcher(args).run()

@@ -15,7 +15,6 @@ class Architect(object):
         self.network_momentum     = args.momentum
         self.network_weight_decay = args.weight_decay
         self.model                = model
-        import ipdb; ipdb.set_trace()
         self.optimizer            = torch.optim.Adam(
             params       = self.model.arch_parameters(),
             lr           = args.arch_lr,
