@@ -5,12 +5,9 @@ CUDA_VISIBLE_DEVICES=$DEVICES python search.py \
 --data 'CIFAR10' \
 --nb_classes 10 \
 --in_dim_V 5 \
---in_dim_E 1 \
---edge_feature \
 --batch 64 \
 --epochs 40 \
 --node_dim 50 \
---edge_dim 50 \
 --portion 0.5 \
 --nb_layers 1 \
 --nb_nodes  4 \
@@ -18,4 +15,4 @@ CUDA_VISIBLE_DEVICES=$DEVICES python search.py \
 --nb_workers 0 \
 --report_freq 1 \
 --search_mode 'train' \
---arch_save 'archs/folder8'
+--arch_save 'archs/folder5'
