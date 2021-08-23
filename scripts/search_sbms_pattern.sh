@@ -12,7 +12,7 @@ CUDA_VISIBLE_DEVICES=$DEVICES python search.py \
 --nb_layers 4 \
 --nb_nodes  3 \
 --dropout 0.0 \
---portion 0.8 \
+--portion 0.5 \
 --nb_workers 0 \
 --report_freq 1 \
 --search_mode 'train' \

@@ -149,15 +149,14 @@ class Trainer(object):
         for i_epoch in range(self.args.epochs):
             #! training
             train_result = self.train(i_epoch, 'train')
-            self.console.log(f"=> train result [{i_epoch}] - loss: {train_result['loss']:.4f} - metric : {train_result['metric']:.4f}")
+            self.console.log(f"[green]=> train result [{i_epoch}] - loss: {train_result['loss']:.4f} - metric : {train_result['metric']:.4f}")
             with torch.no_grad():
                 #! validating
                 val_result   = self.infer(i_epoch, self.val_queue, 'val')
-                self.console.log(f"=> valid result [{i_epoch}] - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}", style = 'yellow')
+                self.console.log(f"[yellow]=> valid result [{i_epoch}] - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}")
                 #! testing
                 test_result  = self.infer(i_epoch, self.test_queue, 'test')
-                self.console.log(f"=> test  result [{i_epoch}] - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}", style = 'red')
-
+                self.console.log(f"[underline][red]=> test  result [{i_epoch}] - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}")
                 self.lr = self.scheduler_step(val_result['loss'])
         
         self.console.log(f'=> Finished! Genotype = {args.load_genotypes}')
@@ -233,13 +232,9 @@ class Trainer(object):
 if __name__ == '__main__':
 
     import warnings
-    from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.syntax import Syntax
     warnings.filterwarnings('ignore')
 
-    parser = argparse.ArgumentParser('Rethinking Graph Neural Architecture Search From Message Passing')
+    parser = argparse.ArgumentParser('Train_from_Genotype')
     parser.add_argument('--task',           type = str,             default = 'graph_level')
     parser.add_argument('--data',           type = str,             default = 'ZINC')
     parser.add_argument('--extra',          type = str,             default = '')
@@ -267,13 +262,16 @@ if __name__ == '__main__':
     parser.add_argument('--patience',       type = int,             default = 10)
     parser.add_argument('--load_genotypes', type = str,             required = True)
 
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.syntax import Syntax
+
     console = Console()
     args    = parser.parse_args()
     title   = "[bold][red]Training from Genotype"
-    vis     = ""
-    for key, val in vars(args).items():
-        vis += f"{key}: {val}\n"
-    vis = Syntax(vis[:-1], "yaml", theme="monokai", line_numbers=True)
+    vis     = '\n'.join([f"{key}: {val}" for key, val in vars(args).items()])
+    vis = Syntax(vis, "yaml", theme="monokai", line_numbers=True)
     richPanel = Panel.fit(vis, title = title)
     console.print(richPanel)
     Trainer(args).run()

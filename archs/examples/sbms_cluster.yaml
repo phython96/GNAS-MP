@@ -1,0 +1,81 @@
+Genotype:
+- id: 0
+  topology:
+  - dst: 1
+    ops: V_Dense
+    src: 0
+  - dst: 2
+    ops: V_Sparse
+    src: 1
+  - dst: 3
+    ops: V_Sum
+    src: 1
+  - dst: 4
+    ops: V_Sum
+    src: 2
+  - dst: 5
+    ops: V_Dense
+    src: 3
+  - dst: 6
+    ops: V_Sparse
+    src: 3
+- id: 1
+  topology:
+  - dst: 1
+    ops: V_Sparse
+    src: 0
+  - dst: 2
+    ops: V_I
+    src: 0
+  - dst: 3
+    ops: V_Sum
+    src: 1
+  - dst: 4
+    ops: V_Sum
+    src: 2
+  - dst: 5
+    ops: V_Sparse
+    src: 3
+  - dst: 6
+    ops: V_Dense
+    src: 4
+- id: 2
+  topology:
+  - dst: 1
+    ops: V_Sparse
+    src: 0
+  - dst: 2
+    ops: V_I
+    src: 0
+  - dst: 3
+    ops: V_Sum
+    src: 1
+  - dst: 4
+    ops: V_Sum
+    src: 2
+  - dst: 5
+    ops: V_Dense
+    src: 4
+  - dst: 6
+    ops: V_Sparse
+    src: 3
+- id: 3
+  topology:
+  - dst: 1
+    ops: V_Dense
+    src: 0
+  - dst: 2
+    ops: V_Dense
+    src: 0
+  - dst: 3
+    ops: V_Sum
+    src: 1
+  - dst: 4
+    ops: V_Sum
+    src: 2
+  - dst: 5
+    ops: V_Sparse
+    src: 3
+  - dst: 6
+    ops: V_Dense
+    src: 4

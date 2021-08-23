@@ -18,7 +18,7 @@ OPS = {
 
 
 First_Stage  = ['V_None', 'V_I', 'V_Sparse', 'V_Dense']
-Second_Stage = ['V_I', 'V_Mean', 'V_Sum', 'V_Max', 'V_Min']
+Second_Stage = ['V_I', 'V_Mean', 'V_Sum', 'V_Max']
 Third_Stage  = ['V_None', 'V_I', 'V_Sparse', 'V_Dense']
 
 
@@ -85,10 +85,11 @@ class V_Max(nn.Module):
 
     def __init__(self, args):
         super().__init__()
-        self.pooling    = NodePooling(args)
+        self.pooling = NodePooling(args)
 
     def forward(self, input):
         G, V = input['G'], input['V']
+        # G.ndata['V'] = V
         G.ndata['V'] = self.pooling(V)
         G.update_all(fn.copy_u('V', 'M'), fn.max('M', 'V'))
         return G.ndata['V']
@@ -98,10 +99,11 @@ class V_Mean(nn.Module):
 
     def __init__(self, args):
         super().__init__()
-        self.pooling    = NodePooling(args)
+        self.pooling = NodePooling(args)
         
     def forward(self, input):
         G, V = input['G'], input['V']
+        # G.ndata['V'] = V
         G.ndata['V'] = self.pooling(V)
         G.update_all(fn.copy_u('V', 'M'), fn.mean('M', 'V'))
         return G.ndata['V']
@@ -111,11 +113,12 @@ class V_Sum(nn.Module):
     
     def __init__(self, args):
         super().__init__()
-        self.pooling    = NodePooling(args)
+        self.pooling = NodePooling(args)
         
     def forward(self, input):
         G, V = input['G'], input['V']
-        G.ndata['V'] = self.pooling(V)
+        # G.ndata['V'] = self.pooling(V)
+        G.ndata['V'] = V
         G.update_all(fn.copy_u('V', 'M'), fn.sum('M', 'V'))
         return G.ndata['V']
 
@@ -124,7 +127,7 @@ class V_Min(nn.Module):
     
     def __init__(self, args):
         super().__init__()
-        self.pooling    = NodePooling(args)
+        self.pooling = NodePooling(args)
         
     def forward(self, input):
         G, V = input['G'], input['V']

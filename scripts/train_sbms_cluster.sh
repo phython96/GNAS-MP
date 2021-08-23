@@ -8,8 +8,8 @@ CUDA_VISIBLE_DEVICES=$DEVICES python train.py \
 --in_dim_V 7 \
 --pos_encode 0 \
 --batch 64 \
---node_dim 50 \
---dropout 0.0 \
+--node_dim 70 \
+--dropout 0.2 \
 --batchnorm_op \
 --epochs 200 \
 --lr 1e-3 \

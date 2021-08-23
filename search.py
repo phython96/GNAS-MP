@@ -127,21 +127,21 @@ class Searcher(object):
                     yaml.dump(geno, f)
 
                 # => report genotype
-                # print( geno )
-                # for i in range(1):
-                #     for p in self.model.group_arch_parameters()[i]:
-                #         print(p.softmax(0).detach().cpu().numpy())
+                self.console.log( geno )
+                for i in range(self.args.nb_layers):
+                    for p in self.model.group_arch_parameters()[i]:
+                        self.console.log(p.softmax(0).detach().cpu().numpy())
 
             search_result = self.search()
-            self.console.log(f"=> search result [{i_epoch}] - loss: {search_result['loss']:.4f} - metric : {search_result['metric']:.4f}", style = 'bold')
+            self.console.log(f"[green]=> search result [{i_epoch}] - loss: {search_result['loss']:.4f} - metric : {search_result['metric']:.4f}",)
             # DecayScheduler().step(i_epoch)
 
             with torch.no_grad():
                 val_result  = self.infer(self.val_queue)
-                self.console.log(f"=> valid result [{i_epoch}] - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}", style = 'yellow')
+                self.console.log(f"[yellow]=> valid result  [{i_epoch}] - loss: {val_result['loss']:.4f} - metric : {val_result['metric']:.4f}")
 
                 test_result = self.infer(self.test_queue)
-                self.console.log(f"=> test  result [{i_epoch}] - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}", style = 'red')
+                self.console.log(f"[red]=> test  result  [{i_epoch}] - loss: {test_result['loss']:.4f} - metric : {test_result['metric']:.4f}")
 
 
     def search(self):
