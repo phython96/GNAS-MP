@@ -1,6 +1,3 @@
-# Rethinking Graph Neural Architecture Search from Message-passing
-
-<a href="https://arxiv.org/abs/2103.14282"><img src = "https://img.shields.io/badge/arxiv-2103.14282-critical"></img></a> <a href="https://opensource.org/licenses/MIT"><img src = "https://img.shields.io/badge/License-MIT-yellow.svg"></img></a> 
 
 ## 🔥News🔥
 Hi, if you like this work, you may be interested in our new work, too. 
@@ -23,6 +20,11 @@ The network proliferation search paradigm decomposes the training of global supe
 
 3. **Our framework is suitable for solving node-level, edge-level, and graph-level tasks. The codes are easy to use.**
 
+---
+
+# Rethinking Graph Neural Architecture Search from Message-passing
+
+<a href="https://arxiv.org/abs/2103.14282"><img src = "https://img.shields.io/badge/arxiv-2103.14282-critical"></img></a> <a href="https://opensource.org/licenses/MIT"><img src = "https://img.shields.io/badge/License-MIT-yellow.svg"></img></a> 
 
 
 
